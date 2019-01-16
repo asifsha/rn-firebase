@@ -1,12 +1,14 @@
 import React from 'react';
 import {
-  StyleSheet, Text, View, Button,
-  FlatList, ListView, ScrollView
+  StyleSheet, Text, View, Button, TextInput,
+  FlatList, TouchableWithoutFeedback, ScrollView
 } from 'react-native';
 import * as firebaseApp from 'firebase';
+
+
 import * as  firebaseconfig from './firebase.config';
 import ListItem from './components/ListItem.js';
-import styles from './Styles.js';
+import { Platform } from 'react-native';
 
 import { List } from 'react-native-paper';
 
@@ -25,7 +27,8 @@ export default class App extends React.Component {
     // });
     const dataSource = [];
     this.state = {
-      dataSource: dataSource
+      dataSource: dataSource,
+      selecteditem: ''
     };
   }
 
@@ -58,64 +61,119 @@ export default class App extends React.Component {
 
   renderSeparator = () => {
     return (
-        <View
-            style={{
-                width: '90%',
-                height: 2,
-                backgroundColor:'#FF4500'	
-            }}
-        >
-            <View>
-               
-            </View>
+      <View
+        style={{
+          width: '90%',
+          height: 2,
+          backgroundColor: '#BBB5B3'
+        }}
+      >
+        <View>
+
         </View>
+      </View>
     )
-}
+  }
 
-  renderItem = ({ item, index }) => (
+  deleteItem(key) {
 
-    <View style={{ flexDirection: 'row' }}>
+    var updates = {};
+  updates['/items/' + key] = null;
+  return firebaseApp.database().ref().update(updates);
+//     var ref = firebaseApp.database().ref("items");
+// ref.orderByChild("key").equalTo(key).on("child_added", function(snapshot) {
+//   console.log(snapshot.key);
 
-            <View>
-                <Text>
-                    {item}
-                </Text>
-            </View>
-        
-        {this.renderSeparator()}
+// });
 
-    </View>
-)
+//     firebaseApp.database().ref('items').delete(key).then(() => {
+//       console.log("Item successfully deleted!");
+
+//     }).catch((error) => {
+//       console.error("Error removing item: ", error);
+
+//     });
+  }
+
+  addItem() {
+
+    var newPostKey = firebaseApp.database().ref().child('items').push().key;
+
+  // Write the new post's data simultaneously in the posts list and the user's post list.
+  var updates = {};
+  updates['/items/' + newPostKey] = {name:this.state.itemname};
+
+
+  return firebaseApp.database().ref().update(updates);
+    // firebaseApp.firestore().collection('items').add({
+    //   name: this.state.itemname
+    // }).then(() => {
+    //   console.log("Item added successfully");
+    // }
+    // ).catch((error) => {
+    //   console.error("Error adding item: ", error);
+    // });
+  }
 
 
   render() {
-   console.log(this.state.dataSource);
+    console.log(this.state.dataSource);
     return (
       <View style={styles.container}>
         <Text>List from firebase</Text>
-        <Text>ex</Text>
+        <TextInput
+          style={{ height: 40, width: 250, borderColor: 'gray', borderWidth: 1 }}
+          onChangeText={(text) => this.setState({ itemname: text })}
+          value={this.state.itemname}
+        />
+        <TouchableWithoutFeedback >
+          <View>
+            <Text style={{ padding: 10 }} onPress={() => this.addItem()} >{this.state.selecteditem === '' ? 'add' : 'update'}</Text>
+          </View>
+        </TouchableWithoutFeedback>
         <FlatList
-          
+
           data={this.state.dataSource}
           renderItem={({ item }) => (
             <View>
-                
-                    <ScrollView horizontal={true}>
-                        <Text style={styles.item}>{item.name}   </Text>
-                    </ScrollView>
-                
+
+              <ScrollView horizontal={true}>
+                <TouchableWithoutFeedback >
+                  <View>
+                    <Text style={{ color: '#FF4500' }} onPress={() => this.deleteItem(item.key)} >{'X'}</Text>
+                  </View>
+                </TouchableWithoutFeedback>
+                <Text style={styles.item}>{item.name}   </Text>
+
+              </ScrollView>
+
+
             </View>
-        )}
-        ItemSeparatorComponent={this.renderSeparator}
-        
-          
+          )}
+          ItemSeparatorComponent={this.renderSeparator}
+
+
         />
         <Text></Text>
-        
+
       </View>
     );
   }
 }
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    paddingTop: Platform.OS === 'ios' ? 38 : 22,
+    alignItems: 'center',
+  },
+  item: {
+    padding: 10,
+    fontSize: 18,
+    height: 44,
+    alignItems: 'center',
+  }
+});
 
 {/* <View style={styles.container}>
         <Text>List from firebase</Text>
