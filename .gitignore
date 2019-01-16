@@ -2,3 +2,4 @@ node_modules/**/*
 .expo/*
 npm-debug.*
 firebase.config.js
+.DS_Store

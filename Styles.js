@@ -7,7 +7,7 @@ var styles = StyleSheet.create({
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    paddingTop:10
+    paddingTop:20
   },
   listView: {
     flex: 1,
@@ -19,7 +19,12 @@ var styles = StyleSheet.create({
     alignItems:'center',
     borderWidth: 1,
     padding:20
-  } 
+  } ,
+  item: {
+    padding: 10,
+    fontSize: 18,
+    height: 44,
+},
 })
 
 module.exports = styles
