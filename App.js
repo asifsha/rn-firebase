@@ -28,7 +28,7 @@ export default class App extends React.Component {
     const dataSource = [];
     this.state = {
       dataSource: dataSource,
-      selecteditem: ''
+      selecteditem: null
     };
   }
 
@@ -78,33 +78,33 @@ export default class App extends React.Component {
   deleteItem(key) {
 
     var updates = {};
-  updates['/items/' + key] = null;
-  return firebaseApp.database().ref().update(updates);
-//     var ref = firebaseApp.database().ref("items");
-// ref.orderByChild("key").equalTo(key).on("child_added", function(snapshot) {
-//   console.log(snapshot.key);
+    updates['/items/' + key] = null;
+    return firebaseApp.database().ref().update(updates);
+    //     var ref = firebaseApp.database().ref("items");
+    // ref.orderByChild("key").equalTo(key).on("child_added", function(snapshot) {
+    //   console.log(snapshot.key);
 
-// });
+    // });
 
-//     firebaseApp.database().ref('items').delete(key).then(() => {
-//       console.log("Item successfully deleted!");
+    //     firebaseApp.database().ref('items').delete(key).then(() => {
+    //       console.log("Item successfully deleted!");
 
-//     }).catch((error) => {
-//       console.error("Error removing item: ", error);
+    //     }).catch((error) => {
+    //       console.error("Error removing item: ", error);
 
-//     });
+    //     });
   }
 
   addItem() {
 
     var newPostKey = firebaseApp.database().ref().child('items').push().key;
 
-  // Write the new post's data simultaneously in the posts list and the user's post list.
-  var updates = {};
-  updates['/items/' + newPostKey] = {name:this.state.itemname};
+    // Write the new post's data simultaneously in the posts list and the user's post list.
+    var updates = {};
+    updates['/items/' + newPostKey] = { name: this.state.itemname };
 
 
-  return firebaseApp.database().ref().update(updates);
+    return firebaseApp.database().ref().update(updates);
     // firebaseApp.firestore().collection('items').add({
     //   name: this.state.itemname
     // }).then(() => {
@@ -113,6 +113,33 @@ export default class App extends React.Component {
     // ).catch((error) => {
     //   console.error("Error adding item: ", error);
     // });
+  }
+
+  updateItem() {
+
+
+
+    // Write the new post's data simultaneously in the posts list and the user's post list.
+    var updates = {};
+    updates['/items/' + this.state.selecteditem.key] = { name: this.state.itemname };
+
+
+    return firebaseApp.database().ref().update(updates);
+    // firebaseApp.firestore().collection('items').add({
+    //   name: this.state.itemname
+    // }).then(() => {
+    //   console.log("Item added successfully");
+    // }
+    // ).catch((error) => {
+    //   console.error("Error adding item: ", error);
+    // });
+  }
+
+  saveItem() {
+    if (this.state.selecteditem === null)
+      this.addItem();
+    else
+      this.updateItem();
   }
 
 
@@ -128,7 +155,7 @@ export default class App extends React.Component {
         />
         <TouchableWithoutFeedback >
           <View>
-            <Text style={{ padding: 10 }} onPress={() => this.addItem()} >{this.state.selecteditem === '' ? 'add' : 'update'}</Text>
+            <Text style={{ padding: 10 }} onPress={() => this.saveItem()} >{this.state.selecteditem === null ? 'add' : 'update'}</Text>
           </View>
         </TouchableWithoutFeedback>
         <FlatList
@@ -143,8 +170,11 @@ export default class App extends React.Component {
                     <Text style={{ color: '#FF4500' }} onPress={() => this.deleteItem(item.key)} >{'X'}</Text>
                   </View>
                 </TouchableWithoutFeedback>
-                <Text style={styles.item}>{item.name}   </Text>
-
+                <TouchableWithoutFeedback onPress={() => this.setState({ selecteditem: item, itemname: item.name })}>
+                  <View>
+                    <Text style={styles.item}>{item.name}   </Text>
+                  </View>
+                </TouchableWithoutFeedback>
               </ScrollView>
 
 
