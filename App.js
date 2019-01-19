@@ -1,16 +1,21 @@
 import React from 'react';
 import {
-  StyleSheet, Text, View, Button, TextInput,
+  StyleSheet, Text, View,
   FlatList, TouchableWithoutFeedback, ScrollView
 } from 'react-native';
 import * as firebaseApp from 'firebase';
+import {
+  TextInput, Button, Snackbar,
+  Portal, Dialog, Paragraph,
+  Provider as PaperProvider
+} from 'react-native-paper';
 
 
 import * as  firebaseconfig from './firebase.config';
 import ListItem from './components/ListItem.js';
 import { Platform } from 'react-native';
 
-import { List } from 'react-native-paper';
+import { Ionicons } from '@expo/vector-icons';
 
 export default class App extends React.Component {
 
@@ -28,7 +33,9 @@ export default class App extends React.Component {
     const dataSource = [];
     this.state = {
       dataSource: dataSource,
-      selecteditem: null
+      selecteditem: null,
+      snackbarVisible: false,
+      confirmVisible: false
     };
   }
 
@@ -75,7 +82,12 @@ export default class App extends React.Component {
     )
   }
 
-  deleteItem(key) {
+  deleteItem(item){
+  this.setState({deleteItem: item, confirmVisible: true});
+  
+  }
+
+  performDeleteItem(key) {
 
     var updates = {};
     updates['/items/' + key] = null;
@@ -95,13 +107,13 @@ export default class App extends React.Component {
     //     });
   }
 
-  addItem() {
+  addItem(itemName) {
 
     var newPostKey = firebaseApp.database().ref().child('items').push().key;
 
     // Write the new post's data simultaneously in the posts list and the user's post list.
     var updates = {};
-    updates['/items/' + newPostKey] = { name: this.state.itemname };
+    updates['/items/' + newPostKey] = { name: itemName === '' || itemName == undefined ? this.state.itemname : itemName };
 
 
     return firebaseApp.database().ref().update(updates);
@@ -125,6 +137,7 @@ export default class App extends React.Component {
 
 
     return firebaseApp.database().ref().update(updates);
+    
     // firebaseApp.firestore().collection('items').add({
     //   name: this.state.itemname
     // }).then(() => {
@@ -140,53 +153,114 @@ export default class App extends React.Component {
       this.addItem();
     else
       this.updateItem();
+
+    this.setState({ itemname: '', selecteditem: null })
   }
+
+  hideDialog(yesNo) {
+    this.setState({ confirmVisible: false });
+    if(yesNo === true)
+    {
+      this.performDeleteItem(this.state.deleteItem.key).then(()=>{
+        this.setState({snackbarVisible:true});
+      });
+    }
+  }
+
+  showDialog() {
+    this.setState({ confirmVisible: true });
+    console.log('in show dialog');
+  }
+
+  undoDeleteItem()
+  {
+  
+    this.addItem(this.state.deleteItem.name);
+  }
+  //hideDialog = () => this.setState({ confirmVisible: false });
 
 
   render() {
-    console.log(this.state.dataSource);
     return (
+      <PaperProvider>
       <View style={styles.container}>
-        <Text>List from firebase</Text>
-        <TextInput
-          style={{ height: 40, width: 250, borderColor: 'gray', borderWidth: 1 }}
-          onChangeText={(text) => this.setState({ itemname: text })}
-          value={this.state.itemname}
-        />
-        <TouchableWithoutFeedback >
-          <View>
-            <Text style={{ padding: 10 }} onPress={() => this.saveItem()} >{this.state.selecteditem === null ? 'add' : 'update'}</Text>
-          </View>
-        </TouchableWithoutFeedback>
-        <FlatList
-
-          data={this.state.dataSource}
-          renderItem={({ item }) => (
+        <ScrollView>
+          <Text>List from firebase</Text>
+          <TextInput
+            label='City'
+            style={{ height: 50, width: 250, borderColor: 'gray', borderWidth: 1 }}
+            onChangeText={(text) => this.setState({ itemname: text })}
+            value={this.state.itemname}
+          />
+          <TouchableWithoutFeedback >
             <View>
-
-              <ScrollView horizontal={true}>
-                <TouchableWithoutFeedback >
-                  <View>
-                    <Text style={{ color: '#FF4500' }} onPress={() => this.deleteItem(item.key)} >{'X'}</Text>
-                  </View>
-                </TouchableWithoutFeedback>
-                <TouchableWithoutFeedback onPress={() => this.setState({ selecteditem: item, itemname: item.name })}>
-                  <View>
-                    <Text style={styles.item}>{item.name}   </Text>
-                  </View>
-                </TouchableWithoutFeedback>
-              </ScrollView>
-
-
+              <Text style={{ padding: 10 }} onPress={() => this.saveItem()} >{this.state.selecteditem === null ? 'add' : 'update'}</Text>
             </View>
-          )}
-          ItemSeparatorComponent={this.renderSeparator}
+          </TouchableWithoutFeedback>
+          <Button icon={this.state.selecteditem === null ? 'add' : 'update'} mode="contained" onPress={() => this.saveItem()}>
+            {this.state.selecteditem === null ? 'add' : 'update'}
+          </Button>
+          <FlatList
+
+            data={this.state.dataSource}
+            renderItem={({ item }) => (
+              <View>
+
+                <ScrollView horizontal={true}>
+                  <TouchableWithoutFeedback >
+                    <View style={{ paddingTop: 10 }}>
+                      <Text style={{ color: '#FF4500' }} onPress={() => this.deleteItem(item)} >
+                        <Ionicons name="md-trash" size={20} />
+                      </Text>
+                    </View>
+                  </TouchableWithoutFeedback>
+                  <TouchableWithoutFeedback onPress={() => this.setState({ selecteditem: item, itemname: item.name })}>
+                    <View>
+                      <Text style={styles.item}>{item.name}   </Text>
+                    </View>
+                  </TouchableWithoutFeedback>
+                </ScrollView>
 
 
-        />
-        <Text></Text>
+              </View>
+            )}
+            ItemSeparatorComponent={this.renderSeparator}
 
+
+          />
+          <Text></Text>
+
+          <Snackbar
+            visible={this.state.snackbarVisible}
+            onDismiss={() => this.setState({ snackbarVisible: false })}
+            action={{
+              label: 'Undo',
+              onPress: () => {
+                // Do something
+                this.undoDeleteItem();
+              },
+            }}
+          >
+            Item deleted successfully.
+        </Snackbar>
+          <Button onPress={() => this.showDialog()}>Show Dialog</Button>
+          <Portal>
+            <Dialog
+              visible={this.state.confirmVisible}
+              onDismiss={() => this.hideDialog(false)}>
+              <Dialog.Title>Confirm</Dialog.Title>
+              <Dialog.Content>
+                <Paragraph>Are you sure you want to delete this?</Paragraph>
+              </Dialog.Content>
+              <Dialog.Actions>
+                <Button onPress={() => this.hideDialog(true)}>Yes</Button>
+                <Button onPress={() => this.hideDialog(false)}>No</Button>
+              </Dialog.Actions>
+            </Dialog>
+          </Portal>
+        </ScrollView>
       </View>
+      </PaperProvider>
     );
   }
 }
@@ -196,6 +270,7 @@ const styles = StyleSheet.create({
     flex: 1,
     paddingTop: Platform.OS === 'ios' ? 38 : 22,
     alignItems: 'center',
+    backgroundColor: '#FFFFE0'
   },
   item: {
     padding: 10,
